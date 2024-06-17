@@ -1,3 +1,9 @@
+#
+# Copyright (C) 2016-2022, Xilinx, Inc.  All rights reserved.
+# Copyright (C) 2023, Advanced Micro Devices, Inc.  All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+#
 
 TOOL_VER_MAIN ?= "${XILINX_XSCT_VERSION}"
 TOOL_VER_MAIN[doc] = "XSCT version, usually the same as XILINX_XSCT_VERSION"
@@ -9,6 +15,7 @@ XSCT_URL[2022.1] = "http://petalinux.xilinx.com/sswreleases/rel-v2022/xsct-trim/
 XSCT_URL[2022.2] = "http://petalinux.xilinx.com/sswreleases/rel-v2022/xsct-trim/xsct-2022-2.tar.xz"
 XSCT_URL[2023.1] = "http://petalinux.xilinx.com/sswreleases/rel-v2023/xsct-trim/xsct-2023-1_0425.tar.xz"
 XSCT_URL[2023.2] = "http://petalinux.xilinx.com/sswreleases/rel-v2023/xsct-trim/xsct-2023-2_1002.tar.xz"
+XSCT_URL[2024.1] = "http://petalinux.xilinx.com/sswreleases/rel-v2024/xsct-trim/xsct-2024-1_0515.tar.xz"
 XSCT_URL ?= "${@d.getVarFlag('XSCT_URL', d.getVar('TOOL_VER_MAIN'))}"
 XSCT_TARBALL ?= "xsct_${TOOL_VER_MAIN}.tar.xz"
 XSCT_DLDIR ?= "${DL_DIR}/xsct/"
@@ -19,6 +26,7 @@ XSCT_CHECKSUM[2022.1] = "e343a8b386398e292f636f314a057076e551a8173723b8ea0bc1bbd
 XSCT_CHECKSUM[2022.2] = "8a3272036ca61f017f357bf6ad9dfbdec6aebb39f43c3ca0cee7ec86ea4c066f"
 XSCT_CHECKSUM[2023.1] = "b23f1bca2bf2205912797e90061708e228ec76809c5765f5955d12e4b31f82aa"
 XSCT_CHECKSUM[2023.2] = "903c8853320e40ed0b23fdf735f88c5a14f945bf92b363f097b8290b523f4016"
+XSCT_CHECKSUM[2024.1] = "b73be5f07312e48aa3ceb96d947a5c7b347caf2dd23c85c3db12893c319235d5"
 XSCT_CHECKSUM ?= "${@d.getVarFlag('XSCT_CHECKSUM', d.getVar('TOOL_VER_MAIN'))}"
 VALIDATE_XSCT_CHECKSUM ?= '1'
 
@@ -53,6 +61,8 @@ XSCT_TARGETS ?= "\
 	pmu-firmware \
 	psm-firmware \
 	uboot-device-tree \
+	esw-bsp \
+	xsct-native \
 	"
 
 python xsct_event_extract() {
@@ -80,6 +90,8 @@ python xsct_event_extract() {
 
     if not xsct_buildtargets and d.getVar('FORCE_XSCT_DOWNLOAD') != '1':
       return
+
+    bb.warn("XSCT has been deprecated. It will still be available for several releases. In the future, it's recommended to start new projects with SDT workflow.")
 
     ext_tarball = d.getVar("EXTERNAL_XSCT_TARBALL")
     use_xscttar = d.getVar("USE_XSCT_TARBALL")
@@ -114,6 +126,9 @@ python xsct_event_extract() {
             chksum_tar_actual = chksum_tar_recipe
     xsctdldir = d.getVar("XSCT_DLDIR")
     tarballname = d.getVar("XSCT_TARBALL")
+
+    bb.note("XSCT_TARBALL is set to %s" % tarballname)
+
     xsctsysroots = d.getVar("XSCT_STAGING_DIR")
     loader = d.getVar("XSCT_LOADER")
 
@@ -163,7 +178,7 @@ python xsct_event_extract() {
             mkdir -p ${XSCT_STAGING_DIR}; \
             cd ${XSCT_STAGING_DIR}; \
             tar -xvf ${XSCT_DLDIR}/${XSCT_TARBALL};")
-        bb.note('Extracting external xsct-tarball to sysroots')
+        bb.note('Extracting external xsct-tarball (%s/%s) to sysroots' % (d.getVar('XSCT_DLDIR'), d.getVar('XSCT_TARBALL')))
         subprocess.check_output(cmd, shell=True)
         with open(tarballchksum, "w") as f:
             f.write(chksum_tar_actual)
