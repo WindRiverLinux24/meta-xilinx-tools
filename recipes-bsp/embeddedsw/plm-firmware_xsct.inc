@@ -1,21 +1,17 @@
-# Should not need any external patches
-SRC_URI = "${EMBEDDEDSW_SRCURI}"
-
-# We WANT to default to this version when available
-DEFAULT_PREFERENCE = "100"
-
 inherit xsctapp xsctyaml
 
-# This needs to match the value in psmfw.bbappend
-PSM_FIRMWARE_IMAGE_NAME = "psm-firmware-${MACHINE}"
+# The makefile does not handle parallelization
+PARALLEL_MAKE = "-j1"
 
 B = "${S}/${XSCTH_PROJ}"
 
-XSCTH_PROC_IP = "psv_psm"
-XSCTH_APP  = "versal PSM Firmware"
+XSCTH_PROC_IP = "psv_pmc"
+XSCTH_PROC_IP:versal-net = "psx_pmc"
+XSCTH_APP  = "versal PLM"
 
 # XSCT version provides it's own toolchain, so can build in any environment
 COMPATIBLE_HOST:versal = "${HOST_SYS}"
+COMPATIBLE_HOST:versal-net = "${HOST_SYS}"
 
 # Clear this for a Linux build, using the XSCT toolchain
 EXTRA_OEMAKE:linux = ""
@@ -26,7 +22,7 @@ ${WORKDIR}/bin:"
 
 MB_OBJCOPY = "mb-objcopy"
 
-do_compile:prepend:elf() {
+do_configure:prepend:elf() {
   mkdir -p ${WORKDIR}/bin
   echo "#! /bin/bash\n${CC} \$@" > ${WORKDIR}/bin/mb-gcc
   echo "#! /bin/bash\n${AS} \$@" > ${WORKDIR}/bin/mb-as
@@ -50,8 +46,10 @@ do_install() {
 }
 
 do_deploy() {
-    install -Dm 0644 ${B}/${XSCTH_PROJ}/executable.elf ${DEPLOYDIR}/${PSM_FIRMWARE_BASE_NAME}.elf
-    ln -sf ${PSM_FIRMWARE_BASE_NAME}.elf ${DEPLOYDIR}/${PSM_FIRMWARE_IMAGE_NAME}.elf
-    install -m 0644 ${B}/${XSCTH_PROJ}/executable.bin ${DEPLOYDIR}/${PSM_FIRMWARE_BASE_NAME}.bin
-    ln -sf ${PSM_FIRMWARE_BASE_NAME}.bin ${DEPLOYDIR}/${PSM_FIRMWARE_IMAGE_NAME}.bin
+    install -Dm 0644 ${B}/${XSCTH_PROJ}/executable.elf ${DEPLOYDIR}/${PLM_BASE_NAME}.elf
+    ln -sf ${PLM_BASE_NAME}.elf ${DEPLOYDIR}/${PLM_IMAGE_NAME}.elf
+    install -m 0644 ${B}/${XSCTH_PROJ}/executable.bin ${DEPLOYDIR}/${PLM_BASE_NAME}.bin
+    ln -sf ${PLM_BASE_NAME}.bin ${DEPLOYDIR}/${PLM_IMAGE_NAME}.bin
 }
+
+addtask deploy before do_build after do_install

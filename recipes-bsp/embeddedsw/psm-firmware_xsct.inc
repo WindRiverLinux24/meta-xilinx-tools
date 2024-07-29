@@ -1,13 +1,7 @@
-# Should not need any external patches
-SRC_URI = "${EMBEDDEDSW_SRCURI}"
-
-# We WANT to default to this version when available
-DEFAULT_PREFERENCE = "100"
-
 inherit xsctapp xsctyaml
 
-# This needs to match the value in psmfw.bbappend
-PSM_FIRMWARE_IMAGE_NAME = "psm-firmware-${MACHINE}"
+# The makefile does not handle parallelization
+PARALLEL_MAKE = "-j1"
 
 B = "${S}/${XSCTH_PROJ}"
 
@@ -17,6 +11,7 @@ XSCTH_APP  = "versal PSM Firmware"
 
 # XSCT version provides it's own toolchain, so can build in any environment
 COMPATIBLE_HOST:versal = "${HOST_SYS}"
+COMPATIBLE_HOST:versal-net = "${HOST_SYS}"
 
 # Clear this for a Linux build, using the XSCT toolchain
 EXTRA_OEMAKE:linux = ""
@@ -27,7 +22,7 @@ ${WORKDIR}/bin:"
 
 MB_OBJCOPY = "mb-objcopy"
 
-do_compile:prepend:elf() {
+do_configure:prepend:elf() {
   mkdir -p ${WORKDIR}/bin
   echo "#! /bin/bash\n${CC} \$@" > ${WORKDIR}/bin/mb-gcc
   echo "#! /bin/bash\n${AS} \$@" > ${WORKDIR}/bin/mb-as
@@ -56,3 +51,5 @@ do_deploy() {
     install -m 0644 ${B}/${XSCTH_PROJ}/executable.bin ${DEPLOYDIR}/${PSM_FIRMWARE_BASE_NAME}.bin
     ln -sf ${PSM_FIRMWARE_BASE_NAME}.bin ${DEPLOYDIR}/${PSM_FIRMWARE_IMAGE_NAME}.bin
 }
+
+addtask deploy before do_build after do_install
